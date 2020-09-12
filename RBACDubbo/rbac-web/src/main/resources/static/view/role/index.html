@@ -1,0 +1,180 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        .tree li {
+            list-style-type: none;
+            cursor:pointer;
+        }
+        table tbody tr:nth-child(odd){background:#F4F4F4;}
+        table tbody td:nth-child(even){color:#C00;}
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <div><a class="navbar-brand" style="font-size:25px;" href="#">RBAC - 后台管理</a></div>
+        </div>
+        <div id="common"></div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+            <div class="tree">
+                <ul style="padding-left:0px;" class="list-group" id="userPermissionList">
+                </ul>
+            </div>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-th"></i> 数据列表</h3>
+                </div>
+                <div class="panel-body">
+                    <button type="button" class="btn btn-primary" style="float:right;" onclick="window.location.href='/role_add'"><i class="glyphicon glyphicon-plus"></i> 新增</button>
+                    <br>
+                    <hr style="clear:both;">
+                    <div class="table-responsive">
+                        <table class="table  table-bordered">
+                            <thead>
+                            <tr >
+                                <th width="30">#</th>
+                                <th>简称</th>
+                                <th>角色名称</th>
+                                <th width="100">操作</th>
+                            </tr>
+                            </thead>
+                            <tbody id="tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="jquery/jquery-2.1.1.min.js"></script>
+<script src="bootstrap/js/bootstrap.min.js"></script>
+<script src="script/docs.min.js"></script>
+<script src="script/layer/layer.js"></script>
+<script type="text/javascript">
+    $("#common").load("/common");
+    function getRoleData() {
+        var tbody=$("#tbody");
+        tbody.empty();
+        $.ajax({
+            url:"/role/list",
+            type:"GET",
+            success:function (result) {
+                var roles=result.data;
+                for(var i=0;i<roles.length;i++)
+                {
+                    var role=roles[i];
+                    tbody.append(
+                        "<tr>" +
+                        "<td>"+role.id+"</td>"+
+                        "<td>"+role.nickName+"</td>"+
+                        "<td>"+role.name+"</td>"+
+                        "<td>"+
+                        "<button type='button' class='btn btn-success btn-xs'  roleId='"+role.id+"' onclick='assignPermission(this)'><i class='glyphicon glyphicon-check'></i></button> "+
+                        "<button type='button' class='btn btn-primary btn-xs' roleId='"+role.id+"' onclick='editRole(this)'><i class='glyphicon glyphicon-pencil'></i></button> "+
+                        "<button type='button' class='btn btn-danger btn-xs' roleId='"+role.id+"' onclick='deleteRole(this)'><i class='glyphicon glyphicon-remove'></i></button> "+
+                        "</td>"+
+                        "</tr>");
+                }
+
+            }});
+
+    }
+
+    function getUserPermission(){
+        var userPermissionList= $("#userPermissionList");
+        userPermissionList.empty();
+        $.ajax({
+            url:"/shiro/permission",
+            type:"GET",
+            success:function (result) {
+                var permissions=result.data;
+                $.each(permissions,function (index,permission) {
+                    if(permission.name=="用户管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/user_index'><i class='glyphicon glyphicon-user'></i> 用户管理</a></li>");
+                    if(permission.name=="角色管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/role_index'><i class='glyphicon glyphicon-king'></i> 角色管理</a></li>");
+                    if(permission.name=="权限管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/role_index'><i class='glyphicon glyphicon-lock'></i> 权限管理</a></li>");
+
+                });
+            }
+        });
+
+    }
+
+    function initData(){
+        getRoleData();
+        getUserPermission();
+    }
+
+    function deleteRole(e){
+        var id=e.getAttribute("roleId");
+        $.ajax({
+            url:"/role/"+id,
+            type:"DELETE",
+            success:function (result) {
+                if (result.status == 200){
+                    layer.msg(result.data, {time:2000, icon:1}, function(){});
+                    window.location.href="/role_index";
+                    getRoleData();;
+                }
+                else
+                    layer.msg(result.data, {time:2000, icon:5, shift:6}, function(){});
+            }
+        });
+    }
+
+
+
+    $(function () {
+        $(".list-group-item").click(function(){
+            if ( $(this).find("ul") ) {
+                $(this).toggleClass("tree-closed");
+                if ( $(this).hasClass("tree-closed") ) {
+                    $("ul", this).hide("fast");
+                } else {
+                    $("ul", this).show("fast");
+                }
+            }
+        });
+    });
+
+
+    function assignPermission(e)
+    {
+        var id=e.getAttribute("roleId");
+        window.location.href = "/role_assignPermission?id="+id;
+    }
+    function editRole(e)
+    {
+        var id=e.getAttribute("roleId");
+        window.location.href = "/role_edit?id="+id;
+    }
+
+
+
+    $(window).load(function(){
+        initData();
+    } );
+</script>
+</body>
+</html>

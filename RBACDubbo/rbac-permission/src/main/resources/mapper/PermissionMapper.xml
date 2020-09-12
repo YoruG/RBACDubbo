@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yoru.example.mapper.PermissionMapper">
+    <insert id="insertPermission" >
+        INSERT INTO permission (name,url) VALUES (#{name},#{url})
+    </insert>
+
+    <delete id="deletePermission">
+        DELETE FROM permission WHERE id=#{id}
+    </delete>
+
+    <update id="updatePermission">
+        UPDATE permission SET name=#{name},url=#{url} WHERE id=#{id}
+    </update>
+
+    <select id="listPermission" resultType="yoru.example.entity.Permission">
+        SELECT * FROM Permission
+    </select>
+
+
+    <select id="listPermissionByRid" resultType="yoru.example.entity.Permission">
+        SELECT * FROM permission WHERE id in (SELECT pid FROM role_permission WHERE rid = #{rid})
+    </select>
+
+    <select id="getPermissionById" resultType="yoru.example.entity.Permission">
+        SELECT * FROM permission WHERE id=#{id}
+    </select>
+</mapper>

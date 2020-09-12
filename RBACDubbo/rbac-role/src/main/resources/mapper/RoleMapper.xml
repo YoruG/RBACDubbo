@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="yoru.example.mapper.RoleMapper">
+    <insert id="insertRole" >
+        INSERT INTO role (name,nickName) VALUES (#{name},#{nickName})
+    </insert>
+
+    <delete id="deleteRole">
+        DELETE FROM role WHERE id=#{id}
+    </delete>
+
+    <update id="updateRole">
+        UPDATE role SET name=#{name},nickName=#{nickName} WHERE id=#{id}
+    </update>
+
+    <select id="listRole" resultType="yoru.example.entity.Role">
+        SELECT * FROM role
+    </select>
+    <select id="listRoleByIds" resultType="yoru.example.entity.Role">
+        SELECT * FROM role WHERE id in
+        <foreach collection="ids" open="(" close=")" item="id" separator=",">
+            ${id}
+        </foreach>
+    </select>
+    <select id="listRoleByUid" resultType="yoru.example.entity.Role">
+        SELECT * FROM role WHERE id in (SELECT rid FROM user_role WHERE uid = #{uid})
+    </select>
+
+    <select id="getRoleById" resultType="yoru.example.entity.Role">
+        SELECT * FROM role WHERE id=#{id}
+    </select>
+
+
+
+    <insert id="insertRolePermissions" >
+        INSERT INTO role_permission (rid,pid) VALUES
+        <foreach collection="pids" separator="," item="pid">
+            (#{rid},#{pid})
+        </foreach>
+    </insert>
+
+    <delete id="deleteRolePermissions" >
+        DELETE FROM role_permission WHERE rid=#{rid} AND pid in
+        <foreach collection="pids" open="(" close=")" separator="," item="pid">
+            #{pid}
+        </foreach>
+    </delete>
+</mapper>

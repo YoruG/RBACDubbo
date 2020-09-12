@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/doc.min.css">
+    <style>
+        .tree li {
+            list-style-type: none;
+            cursor:pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <div><a class="navbar-brand" style="font-size:25px;" href="#">RBAC - 后台管理</a></div>
+        </div>
+        <div id="common"></div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+            <div class="tree">
+                <ul style="padding-left:0px;" class="list-group" id="userPermissionList">
+                </ul>
+            </div>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <ol class="breadcrumb">
+                <li><a href="/main">首页</a></li>
+                <li><a href="/role_index">角色列表</a></li>
+                <li class="active">分配权限</li>
+            </ol>
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <form role="form" class="form-inline" id="permissionForm">
+                        <input type="hidden" name="rid" id="rid">
+                        <div class="form-group">
+                            <label>未分配权限列表</label><br>
+                            <select  id="unAssignList" name="unAssignList" class="form-control" multiple size="12" style="width:200px;overflow-y:auto;">
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <ul>
+                                <li id="toRightButton" onclick="roleToRight()" class="btn btn-default glyphicon glyphicon-chevron-right"></li>
+                                <br>
+                                <li id="toLeftButton"  onclick="roleToLeft()"  class="btn btn-default glyphicon glyphicon-chevron-left" style="margin-top:20px;"></li>
+                            </ul>
+                        </div>
+                        <div class="form-group" style="margin-left:40px;">
+                            <label>已分配权限列表</label><br>
+                            <select id="assignList"  name="assignList"  class="form-control" multiple size="12" style="width:200px;overflow-y:auto;">
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">帮助</h4>
+            </div>
+            <div class="modal-body">
+                <div class="bs-callout bs-callout-info">
+                    <h4>测试标题1</h4>
+                    <p>测试内容1，测试内容1，测试内容1，测试内容1，测试内容1，测试内容1</p>
+                </div>
+                <div class="bs-callout bs-callout-info">
+                    <h4>测试标题2</h4>
+                    <p>测试内容2，测试内容2，测试内容2，测试内容2，测试内容2，测试内容2</p>
+                </div>
+            </div>
+            <!--
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary">Save changes</button>
+            </div>
+            -->
+        </div>
+    </div>
+</div>
+<script src="jquery/jquery-2.1.1.min.js"></script>
+<script src="bootstrap/js/bootstrap.min.js"></script>
+<script src="script/docs.min.js"></script>
+<script src="script/layer/layer.js"></script>
+<script type="text/javascript">
+    $("#common").load("/common");
+    function getParams(url) {
+        var theRequest = new Object();
+        if (!url)
+            url = window.location.href;
+        if (url.indexOf("?") !== -1) {
+            var str = url.substr(url.indexOf("?") + 1) + "&";
+            var strs = str.split("&");
+            for (var i = 0; i < strs.length - 1; i++) {
+                var key = strs[i].substring(0, strs[i].indexOf("="));
+                var val = strs[i].substring(strs[i].indexOf("=") + 1);
+                theRequest[key] = val;
+            }
+        }
+        return theRequest;
+    }
+    function initPermission(roleId)
+    {
+        var unAssignList=$("#unAssignList");
+        var assignList=$("#assignList");
+        $.ajax({
+            url:"/role/unAssignPermissionAndAssignPermission/"+roleId,
+            type:"GET",
+            success:function (result) {
+                var assignPermissionList=result.data.assignPermissionList;
+                var unAssignPermissionList=result.data.unAssignPermissionList;
+                $.each(assignPermissionList,function (index,assignPermission) {
+                    assignList.append("<option value='"+assignPermission.id+"'>"+assignPermission.name+"</option>");
+                });
+                $.each(unAssignPermissionList,function (index,unAssignPermission) {
+                    unAssignList.append("<option value='"+unAssignPermission.id+"'>"+unAssignPermission.name+"</option>");
+                });
+            }
+        });
+    }
+
+    function getUserPermission(){
+        var userPermissionList= $("#userPermissionList");
+        userPermissionList.empty();
+        $.ajax({
+            url:"/shiro/permission",
+            type:"GET",
+            success:function (result) {
+                var permissions=result.data;
+                $.each(permissions,function (index,permission) {
+                    if(permission.name=="用户管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/user_index'><i class='glyphicon glyphicon-user'></i> 用户管理</a></li>");
+                    if(permission.name=="角色管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/role_index'><i class='glyphicon glyphicon-king'></i> 角色管理</a></li>");
+                    if(permission.name=="权限管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/role_index'><i class='glyphicon glyphicon-lock'></i> 权限管理</a></li>");
+
+                });
+            }
+        });
+
+    }
+    function initData(){
+        var params = getParams();
+        var roleId=params.id;
+        $("#rid").attr("value",roleId);
+        initPermission(roleId);
+        getUserPermission();
+    }
+
+    function roleToRight(){
+        var opts = $("#unAssignList :selected");
+        if ( opts.length != 0 ) {
+            $.ajax({
+                url:"/role/insertRolePermission",
+                type:"POST",
+                data:$("#permissionForm").serialize(),
+                success:function (result) {
+                    if (result.status == 200){
+                        layer.msg(result.data, {time:2000, icon:1}, function(){});
+                    }
+                    else
+                        layer.msg(result.data, {time:2000, icon:5, shift:6}, function(){});
+                    $("#assignList").append(opts);
+                }
+            });
+
+        }
+    }
+
+    function roleToLeft(){
+        var opts = $("#assignList :selected");
+        if ( opts.length != 0 ) {
+            $.ajax({
+                url:"/role/deleteRolePermission",
+                type:"POST",
+                data:$("#permissionForm").serialize(),
+                success:function (result) {
+                    if (result.status == 200){
+                        layer.msg(result.data, {time:2000, icon:1}, function(){});
+                    }
+                    else
+                        layer.msg(result.data, {time:2000, icon:5, shift:6}, function(){});
+                    $("#unAssignList").append(opts);
+                }
+            });
+        }
+    }
+
+
+
+    $(function () {
+        $(".list-group-item").click(function(){
+            if ( $(this).find("ul") ) {
+                $(this).toggleClass("tree-closed");
+                if ( $(this).hasClass("tree-closed") ) {
+                    $("ul", this).hide("fast");
+                } else {
+                    $("ul", this).show("fast");
+                }
+            }
+        });
+    });
+
+
+    $(window).load(function(){
+        initData();
+    } );
+</script>
+</body>
+</html>
+

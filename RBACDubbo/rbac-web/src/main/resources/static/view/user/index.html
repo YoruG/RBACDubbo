@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        .tree li {
+            list-style-type: none;
+            cursor:pointer;
+        }
+        table tbody tr:nth-child(odd){background:#F4F4F4;}
+        table tbody td:nth-child(even){color:#C00;}
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <div><a class="navbar-brand" style="font-size:25px;" href="#">RBAC - 后台管理</a></div>
+        </div>
+        <div id="common"></div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+            <div class="tree">
+                <ul style="padding-left:0px;" class="list-group" id="userPermissionList">
+                </ul>
+            </div>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><i class="glyphicon glyphicon-th"></i> 数据列表</h3>
+                </div>
+                <div class="panel-body">
+                    <form class="form-inline" role="form" style="float:left;" id="searchForm" >
+                        <div class="form-group has-feedback">
+                            <div class="input-group">
+                                <div class="input-group-addon">查询条件</div>
+                                <input class="form-control has-success" type="text" id="keyword" name="keyword" placeholder="请输入查询条件">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-warning" onclick="searchUser()"><i class="glyphicon glyphicon-search"></i> 查询</button>
+                    </form>
+                    <button type="button" class="btn btn-danger" style="float:right;margin-left:10px;" onclick="deleteUsers()"><i class=" glyphicon glyphicon-remove"></i> 删除</button>
+                    <button type="button" class="btn btn-primary" style="float:right;" onclick="window.location.href='/user_add'"><i class="glyphicon glyphicon-plus"></i> 新增</button>
+                    <br>
+                    <hr style="clear:both;">
+                    <div class="table-responsive">
+                        <table class="table  table-bordered">
+                            <form id="deleteForm">
+                                <thead>
+                                <tr >
+                                    <th width="30">#</th>
+                                    <th width="30"><input type="checkbox"></th>
+                                    <th>账号</th>
+                                    <th>名称</th>
+                                    <th>邮箱地址</th>
+                                    <th>当前角色</th>
+                                    <th width="100">操作</th>
+                                </tr>
+                                </thead>
+                                <tbody id="tbody">
+                                </tbody>
+                                <tfoot id="tfoot">
+
+                                </tfoot>
+                            </form>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="jquery/jquery-2.1.1.min.js"></script>
+<script src="bootstrap/js/bootstrap.min.js"></script>
+<script src="script/docs.min.js"></script>
+<script src="script/layer/layer.js"></script>
+<script type="text/javascript">
+    $("#common").load("/common");
+    var currentPageNum;
+    function getPageData(pageNo) {
+        var tbody=$("#tbody");
+        var tfoot=$("#tfoot");
+        tbody.empty();
+        tfoot.empty();
+        $.ajax({
+            url:"/user/list",
+            type:"GET",
+            data:{pageNo:pageNo},
+            success:function (result) {
+                var users=result.data.list;
+                for(var i=0;i<users.length;i++)
+                {
+                    var user=users[i];
+                    tbody.append("<tr>" +
+                        "<td>"+user.id+"</td>" +
+                        "<td><input type='checkbox' value="+user.id+" name='ids'></td>" +
+                        "<td>"+user.account+"</td>" +
+                        "<td>"+user.name+"</td>" +
+                        "<td>"+user.email+"</td>" +
+                        "<td id='roleSet"+user.id+"'"+"></td>" +
+                        "<td>" +
+                        "<button type='button' class='btn btn-success btn-xs' userId="+user.id+" onclick='assignRole(this)'><i class='glyphicon glyphicon-check'></i></button> " +
+                        "<button type='button' class='btn btn-primary btn-xs' userId="+user.id+" onclick='editUser(this)'><i class='glyphicon glyphicon-pencil'></i></button> " +
+                        "<button type='button' class='btn btn-danger btn-xs' userId="+user.id+" onclick='deleteUser(this)'><i class='glyphicon glyphicon-remove'></i></button> " +
+                        "</td>"+
+                        "</tr>");
+
+                    var roleSet=$("#roleSet"+user.id);
+                    $.each(user.roleSet,function (index,role) {
+                        roleSet.append(role.nickName+" ");
+                    });
+                }
+                var hasPreviousPage=result.data.hasPreviousPage;
+                var pageNum=result.data.pageNum;
+                currentPageNum=pageNum;
+                var hasNextPage=result.data.hasNextPage;
+                var navigatepageNums=result.data.navigatepageNums;
+                tfoot.append("<tr><td colspan='7' align='center'><ul id='pageUl' class='pagination'>");
+                var pageUl=$("#pageUl");
+                if (hasPreviousPage==true)
+                    pageUl.append("<li><a onclick='getPageData("+(pageNum-1)+")'>上一页</a></li>");
+
+                $.each(navigatepageNums,function (index,navigatepageNum) {
+                    if(navigatepageNum==pageNum)
+                        pageUl.append("<li class='active'><a onclick='getPageData("+navigatepageNum+")'>" +
+                            navigatepageNum+"<span class='sr-only'>"+navigatepageNum+"</span></a></li> ");
+                    else
+                        pageUl.append("<li><a onclick='getPageData("+(navigatepageNum)+")'+>"+navigatepageNum+"</a></li> ");
+                }) ;
+
+                if (hasNextPage==true)
+                    pageUl.append("<li><a onclick='getPageData("+(pageNum+1)+")'>下一页</a></li>");
+                tfoot.append("</ul></td></tr>");
+            }});
+
+    }
+
+    function getUserPermission(){
+        var userPermissionList= $("#userPermissionList");
+        userPermissionList.empty();
+        $.ajax({
+            url:"/shiro/permission",
+            type:"GET",
+            success:function (result) {
+                var permissions=result.data;
+                $.each(permissions,function (index,permission) {
+                    if(permission.name=="用户管理")
+                    userPermissionList.append("<li class='list-group-item' >" +
+                        "<a href='/user_index'><i class='glyphicon glyphicon-user'></i> 用户管理</a></li>");
+                    if(permission.name=="角色管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/role_index'><i class='glyphicon glyphicon-king'></i> 角色管理</a></li>");
+                    if(permission.name=="权限管理")
+                        userPermissionList.append("<li class='list-group-item' >" +
+                            "<a href='/role_index'><i class='glyphicon glyphicon-lock'></i> 权限管理</a></li>");
+
+                });
+            }
+        });
+
+    }
+    function initData(){
+        getPageData(1);
+        getUserPermission();
+    }
+
+    function searchUser() {
+        var tbody=$("#tbody");
+        tbody.empty();
+        var tfoot=$("#tfoot");
+        tfoot.remove();
+        var keyword= $("#keyword").val();
+        $.ajax({
+            url:"/user/search",
+            type:"GET",
+            data:{keyword:keyword},
+            success:function (result) {
+                var users=result.data.list;
+                for(var i=0;i<users.length;i++)
+                {
+                    var user=users[i];
+                    tbody.append("<tr>" +
+                        "<td>"+user.id+"</td>" +
+                        "<td><input type='checkbox' value="+user.id+" name='ids'></td>" +
+                        "<td>"+user.account+"</td>" +
+                        "<td>"+user.name+"</td>" +
+                        "<td>"+user.email+"</td>" +
+                        "<td id='roleSet"+user.id+"'"+"></td>" +
+                        "<td>" +
+                        "<button type='button' class='btn btn-success btn-xs' userId="+user.id+" onclick='assignRole(this)'><i class='glyphicon glyphicon-check'></i></button> " +
+                        "<button type='button' class='btn btn-primary btn-xs' userId="+user.id+" onclick='editUser(this)'><i class='glyphicon glyphicon-pencil'></i></button> " +
+                        "<button type='button' class='btn btn-danger btn-xs' userId="+user.id+" onclick='deleteUser(this)'><i class='glyphicon glyphicon-remove'></i></button> " +
+                        "</td>"+
+                        "</tr>");
+                    var roleSet=$("#roleSet"+user.id);
+                    $.each(user.roleSet,function (index,role) {
+                        roleSet.append(role.nickName+" ");
+                    });
+                }
+            }
+        });
+    }
+
+    function deleteUsers(){
+        var loadFlag;
+        var ids = "";
+        $.each($("[name=ids]:checked"),function(){
+            ids += $(this).val()+",";
+        });
+        ids = ids.substring(0, ids.length-1);
+        $.ajax({
+            url:"/user/list",
+            type:"DELETE",
+            data:{ids: ids,_method:"DELETE"},
+            beforeSend:function () {
+                loadFlag = layer.msg('处理中', {icon: 16});
+            },
+            success:function (result) {
+                layer.close(loadFlag);
+                if (result.status == 200){
+                    layer.msg(result.data, {time:2000, icon:1}, function(){});
+                    getPageData(currentPageNum);
+                }
+                else
+                    layer.msg(result.data, {time:2000, icon:5, shift:6}, function(){});
+            }
+        });
+    }
+
+    function deleteUser(e){
+        var id=e.getAttribute("userId");
+        $.ajax({
+            url:"/user/"+id,
+            type:"DELETE",
+            success:function (result) {
+                if (result.status == 200){
+                    layer.msg(result.data, {time:2000, icon:1}, function(){});
+                    getPageData(currentPageNum);
+                }
+                else
+                    layer.msg(result.data, {time:2000, icon:5, shift:6}, function(){});
+            }
+        });
+    }
+
+
+    $(function () {
+        $(".list-group-item").click(function(){
+            if ( $(this).find("ul") ) {
+                $(this).toggleClass("tree-closed");
+                if ( $(this).hasClass("tree-closed") ) {
+                    $("ul", this).hide("fast");
+                } else {
+                    $("ul", this).show("fast");
+                }
+            }
+        });
+    });
+    function assignRole(e){
+        var id=e.getAttribute("userId");
+        window.location.href = "/user_assignRole?id="+id;
+    }
+
+    function editUser(e)
+    {
+        var id=e.getAttribute("userId");
+        window.location.href = "/user_edit?id="+id;
+    }
+
+
+    $(window).load(function(){
+        initData();
+    } );
+</script>
+</body>
+</html>

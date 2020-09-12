@@ -1,0 +1,10 @@
+server:
+  port: 80
+dubbo:
+  application:
+    name: web-service
+  registry:
+    protocol: zookeeper
+    address: 127.0.0.1:2181
+  protocol:
+    name: dubbo
